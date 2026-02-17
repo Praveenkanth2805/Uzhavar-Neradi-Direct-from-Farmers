@@ -114,6 +114,19 @@ Customers will only see delivery methods enabled by that farmer.
 
 ---
 
+## 🌐 Language Support
+
+உழவர் நேரடி is primarily built for Tamil-speaking users.
+
+- Default Language: Tamil
+- Secondary Language: English
+- Simple UI for rural and semi-urban users
+- Easy language switch option
+
+The platform focuses on accessibility and clarity for farmers.
+
+---
+
 ## 💰 Revenue Model (Future Scope)
 
 - Small platform commission per order
