@@ -24,23 +24,24 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = async (email, password) => {
-    try {
-      const res = await api.post('/users/login/', { email, password });
-      if (res.data.error) {
-        setError(res.data.error);
-        return false;
-      }
-      sessionStorage.setItem('access', res.data.access);
-      sessionStorage.setItem('refresh', res.data.refresh);
-      setUser(res.data.user);
-      setError('');
-      return true;
-    } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
-      return false;
+  // in AuthContext.js
+const login = async (email, password) => {
+  try {
+    const res = await api.post('/users/login/', { email, password });
+    if (res.data.error) {
+      setError(res.data.error);
+      return null; // return null to indicate failure
     }
-  };
+    sessionStorage.setItem('access', res.data.access);
+    sessionStorage.setItem('refresh', res.data.refresh);
+    setUser(res.data.user);
+    setError('');
+    return res.data.user; // return the user object
+  } catch (err) {
+    setError(err.response?.data?.error || 'Login failed');
+    return null;
+  }
+};
 
   const logout = () => {
     sessionStorage.removeItem('access');

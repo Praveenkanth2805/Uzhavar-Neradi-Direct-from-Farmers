@@ -13,6 +13,8 @@ const PendingApprovals = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentRole, setCurrentRole] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [approveUserId, setApproveUserId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,10 +58,16 @@ const PendingApprovals = () => {
     try {
       await api.post(`/admin/approve-user/${userId}/`);
       toast.success(t('user_approved'));
+      setShowApproveModal(false);
       fetchPending();
     } catch (err) {
       toast.error(t('approve_failed'));
     }
+  };
+
+  const openApproveModal = (userId) => {
+    setApproveUserId(userId);
+    setShowApproveModal(true);
   };
 
   const openRejectModal = (userId, role) => {
@@ -87,26 +95,80 @@ const PendingApprovals = () => {
   };
 
   const renderDocuments = (user) => {
+    // Display images directly
     return (
       <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
         {user.land_photo && (
-          <a href={user.land_photo} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
-            {t('view_land_photo')}
-          </a>
+          <img
+            src={user.land_photo}
+            alt="Land"
+            style={{ width: '80px', height: '60px', objectFit: 'cover', cursor: 'pointer' }}
+            onClick={() => window.open(user.land_photo, '_blank')}
+          />
         )}
         {user.vehicle_photo && (
-          <a href={user.vehicle_photo} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
-            {t('view_vehicle_photo')}
-          </a>
+          <img
+            src={user.vehicle_photo}
+            alt="Vehicle"
+            style={{ width: '80px', height: '60px', objectFit: 'cover', cursor: 'pointer' }}
+            onClick={() => window.open(user.vehicle_photo, '_blank')}
+          />
         )}
         {user.license_photo && (
-          <a href={user.license_photo} target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
-            {t('view_license_photo')}
-          </a>
+          <img
+            src={user.license_photo}
+            alt="License"
+            style={{ width: '80px', height: '60px', objectFit: 'cover', cursor: 'pointer' }}
+            onClick={() => window.open(user.license_photo, '_blank')}
+          />
+        )}
+        {!user.land_photo && !user.vehicle_photo && !user.license_photo && (
+          <span>{t('no_documents')}</span>
         )}
       </div>
     );
   };
+
+  const renderDocumentsLarge = (user) => (
+    <div className="flex gap-md" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
+      {user.land_photo && (
+        <div>
+          <strong>{t('land_photo')}</strong><br />
+          <img
+            src={user.land_photo}
+            alt="Land"
+            style={{ width: '200px', height: '150px', objectFit: 'cover', cursor: 'pointer' }}
+            onClick={() => window.open(user.land_photo, '_blank')}
+          />
+        </div>
+      )}
+      {user.vehicle_photo && (
+        <div>
+          <strong>{t('vehicle_photo')}</strong><br />
+          <img
+            src={user.vehicle_photo}
+            alt="Vehicle"
+            style={{ width: '200px', height: '150px', objectFit: 'cover', cursor: 'pointer' }}
+            onClick={() => window.open(user.vehicle_photo, '_blank')}
+          />
+        </div>
+      )}
+      {user.license_photo && (
+        <div>
+          <strong>{t('license_photo')}</strong><br />
+          <img
+            src={user.license_photo}
+            alt="License"
+            style={{ width: '200px', height: '150px', objectFit: 'cover', cursor: 'pointer' }}
+            onClick={() => window.open(user.license_photo, '_blank')}
+          />
+        </div>
+      )}
+      {!user.land_photo && !user.vehicle_photo && !user.license_photo && (
+        <span>{t('no_documents')}</span>
+      )}
+    </div>
+  );
 
   const getRoleDisplay = (role) => {
     switch(role) {
@@ -116,6 +178,9 @@ const PendingApprovals = () => {
       default: return role;
     }
   };
+
+  const currentUser = pendingUsers.find(u => u.id === currentUserId);
+  const approveUserObj = pendingUsers.find(u => u.id === approveUserId);
 
   if (loading) return <div className="container mt-md">{t('loading')}</div>;
 
@@ -147,7 +212,7 @@ const PendingApprovals = () => {
                   <td>{renderDocuments(user)}</td>
                   <td>
                     <div className="flex gap-sm">
-                      <Button variant="success" onClick={() => approveUser(user.id)}>
+                      <Button variant="success" onClick={() => openApproveModal(user.id)}>
                         {t('approve')}
                       </Button>
                       <Button variant="danger" onClick={() => openRejectModal(user.id, user.role)}>
@@ -158,15 +223,23 @@ const PendingApprovals = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+           </table>
         </div>
       )}
 
       {/* Reject Modal */}
-      {showRejectModal && (
+      {showRejectModal && currentUser && (
         <div className="modal-overlay">
           <div className="card" style={{ maxWidth: '500px', margin: '0 auto' }}>
             <h3>{t('reject_user', { role: getRoleDisplay(currentRole) })}</h3>
+
+            <div className="mb-md">
+              <h4>{t('documents')}</h4>
+              <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                {renderDocumentsLarge(currentUser)}
+              </div>
+            </div>
+
             <div className="mb-md">
               <label>{t('select_reason')}</label>
               <select
@@ -193,8 +266,29 @@ const PendingApprovals = () => {
               </div>
             )}
             <div className="flex gap-sm justify-end">
-              <Button variant="primary" onClick={rejectUser}>{t('send_rejection')}</Button>
+              <Button variant="danger" onClick={rejectUser}>{t('send_rejection')}</Button>
               <Button variant="secondary" onClick={() => setShowRejectModal(false)}>{t('cancel')}</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve Confirmation Modal */}
+      {showApproveModal && approveUserObj && (
+        <div className="modal-overlay">
+          <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+            <h3>{t('confirm_approval')}</h3>
+            <div className="mb-md">
+              <h4>{t('documents')}</h4>
+              {renderDocumentsLarge(approveUserObj)}
+            </div>
+            <div className="flex gap-sm justify-end">
+              <Button variant="success" onClick={() => approveUser(approveUserId)}>
+                {t('confirm_approve')}
+              </Button>
+              <Button variant="secondary" onClick={() => setShowApproveModal(false)}>
+                {t('cancel')}
+              </Button>
             </div>
           </div>
         </div>

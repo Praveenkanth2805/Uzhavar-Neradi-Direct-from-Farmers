@@ -13,8 +13,18 @@ const Login = () => {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    const success = await login(email, password);
-    if (success) navigate('/dashboard');
+    const userData = await login(email, password);
+    if (userData) {
+      if (!userData.is_approved) {
+        // Redirect to profile page based on role
+        if (userData.role === 'farmer') navigate('/farmer/profile');
+        else if (userData.role === 'delivery') navigate('/delivery/profile');
+        else if (userData.role === 'customer') navigate('/customer/profile');
+        else navigate('/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    }
   };
 
   return (

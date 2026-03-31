@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate, NavLink, Routes, Route } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import DeliveryOrders from './delivery/DeliveryOrders';
@@ -10,7 +10,15 @@ import DeliveryHome from './delivery/DeliveryHome';
 
 const DeliveryDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (user && !user.is_approved && !location.pathname.includes('/delivery/profile')) {
+      navigate('/delivery/profile');
+    }
+  }, [user, location, navigate]);
 
   return (
     <div className={`dashboard-role ${user?.role || 'delivery'}`}>

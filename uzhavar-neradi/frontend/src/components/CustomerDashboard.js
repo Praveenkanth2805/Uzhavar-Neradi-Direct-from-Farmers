@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate, NavLink, Routes, Route } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import CustomerHome from './customer/CustomerHome';
@@ -11,7 +11,15 @@ import Checkout from './customer/Checkout';
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (user && !user.is_approved && !location.pathname.includes('/customer/profile')) {
+      navigate('/customer/profile');
+    }
+  }, [user, location, navigate]);
 
   return (
     <div className={`dashboard-role ${user?.role || 'customer'}`}>

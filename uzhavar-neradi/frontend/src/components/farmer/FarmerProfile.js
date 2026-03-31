@@ -15,8 +15,13 @@ const FarmerProfile = () => {
   const [language, setLanguage] = useState(user?.language || 'ta');
   const [latitude, setLatitude] = useState(user?.latitude || null);
   const [longitude, setLongitude] = useState(user?.longitude || null);
+  const [landPhoto, setLandPhoto] = useState(null);
+  const [existingLandPhoto, setExistingLandPhoto] = useState(user?.land_photo || '');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const isPending = user && !user.is_approved && !user.is_rejected;
+  const isRejected = user && user.is_rejected;
 
   const handlePlaceSelected = ({ address, lat, lng }) => {
     setAddress(address);
@@ -24,25 +29,35 @@ const FarmerProfile = () => {
     setLongitude(parseFloat(lng.toFixed(6)));
   };
 
+  const handleFileChange = (e) => {
+    setLandPhoto(e.target.files[0]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
+    const formData = new FormData();
+    formData.append('upi_id', upiId);
+    formData.append('address', address);
+    formData.append('phone', phone);
+    formData.append('language', language);
+    if (latitude) formData.append('latitude', latitude);
+    if (longitude) formData.append('longitude', longitude);
+    if (landPhoto) formData.append('land_photo', landPhoto);
+
     try {
-      await api.patch('/users/update-profile/', {
-        upi_id: upiId,
-        address,
-        phone,
-        language,
-        latitude,
-        longitude
+      const res = await api.patch('/users/update-profile/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setUser({ ...user, upi_id: upiId, address, phone, language, latitude, longitude });
+      setUser({ ...user, upi_id: upiId, address, phone, language, latitude, longitude,
+                land_photo: res.data.land_photo });
+      setExistingLandPhoto(res.data.land_photo);
       setMessage(t('profile_updated'));
       toast.success(t('profile_updated'));
-      if (!latitude || !longitude) {
-  toast.warn(t('address_not_geocoded'));
-}
+      if (isRejected) {
+        toast.info(t('resubmitted_for_approval'));
+      }
     } catch (err) {
       setMessage(t('update_failed'));
       toast.error(t('update_failed'));
@@ -53,9 +68,21 @@ const FarmerProfile = () => {
 
   return (
     <div className="container mt-md">
-      <div className="card" style={{ maxWidth: '500px', margin: '0 auto' }}>
+      <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
         <h2>{t('farmer_profile')}</h2>
-        <form onSubmit={handleSubmit}>
+        {isPending && (
+          <div className="alert alert-info">
+            {t('pending_approval_message')}
+          </div>
+        )}
+        {isRejected && (
+          <div className="alert alert-warning">
+            <strong>{t('rejected_message')}</strong><br />
+            {t('rejection_reason')}: {user.rejection_reason}<br />
+            {t('please_update_documents')}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} encType="multipart/form-data">
           <div className="form-group">
             <label>{t('email')}</label>
             <input type="email" value={user?.email || ''} disabled className="input" />
@@ -100,6 +127,15 @@ const FarmerProfile = () => {
             </select>
           </div>
           <div className="form-group">
+            <label>{t('land_photo')}</label>
+            {existingLandPhoto && (
+              <div className="mb-sm">
+                <img src={existingLandPhoto} alt="Land" style={{ maxWidth: '200px', maxHeight: '150px' }} />
+              </div>
+            )}
+            <input type="file" accept="image/*" onChange={handleFileChange} className="input" />
+          </div>
+          <div className="form-group">
             <Button
               type="submit"
               variant="primary"
@@ -108,7 +144,6 @@ const FarmerProfile = () => {
             >
               {loading ? t('updating') : t('update_profile')}
             </Button>
-            
           </div>
           {message && (
             <p className={`text-${message.includes(t('profile_updated')) ? 'success' : 'error'}`}>

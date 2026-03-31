@@ -376,7 +376,12 @@ const resources = {
   "vehicle_photo": "Vehicle Photo",
   "license_photo": "License Photo",
   "no_account": "Don't have an account?",
-  "otp_verification_failed": "OTP verification failed. Please try again."
+  "otp_verification_failed": "OTP verification failed. Please try again.",
+  "confirm_approval": "Confirm Approval",
+  "confirm_approve": "Approve",
+  "land_photo": "Land Photo",
+  "vehicle_photo": "Vehicle Photo",
+  "license_photo": "License Photo",
         }
     },
     ta: {
@@ -745,6 +750,11 @@ const resources = {
   "vehicle_photo": "வாகன புகைப்படம்",
   "license_photo": "உரிம புகைப்படம்",
    "no_account": "கணக்கு இல்லையா?",
+     "confirm_approval": "ஒப்புதலை உறுதிப்படுத்து",
+  "confirm_approve": "ஒப்புதல்",
+  "land_photo": "நில புகைப்படம்",
+  "vehicle_photo": "வாகன புகைப்படம்",
+  "license_photo": "உரிம புகைப்படம்",
         }
     }
 };

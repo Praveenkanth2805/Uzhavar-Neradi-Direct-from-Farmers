@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import GeoapifyAddressInput from '../GeoapifyAddressInput';
 import Button from '../Button/Button';
-import {toast} from 'react-toastify';
+import { toast } from 'react-toastify';
 
 const CustomerProfile = () => {
   const { user, setUser } = useAuth();
@@ -16,7 +16,9 @@ const CustomerProfile = () => {
   const [longitude, setLongitude] = useState(user?.longitude || null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
+  const isPending = user && !user.is_approved && !user.is_rejected;
+  const isRejected = user && user.is_rejected;
 
   const handlePlaceSelected = ({ address, lat, lng }) => {
     setAddress(address);
@@ -38,11 +40,16 @@ const CustomerProfile = () => {
       });
       setUser({ ...user, address, phone, language, latitude, longitude });
       setMessage(t('profile_updated'));
+      toast.success(t('profile_updated'));
+      if (isRejected) {
+        toast.info(t('resubmitted_for_approval'));
+      }
       if (!latitude || !longitude) {
-  toast.warn(t('address_not_geocoded'));
-}
+        toast.warn(t('address_not_geocoded'));
+      }
     } catch (err) {
       setMessage(t('update_failed'));
+      toast.error(t('update_failed'));
     } finally {
       setLoading(false);
     }
@@ -52,6 +59,18 @@ const CustomerProfile = () => {
     <div className="container mt-md">
       <div className="card" style={{ maxWidth: '500px', margin: '0 auto' }}>
         <h2>{t('my_profile')}</h2>
+        {isPending && (
+          <div className="alert alert-info">
+            {t('pending_approval_message')}
+          </div>
+        )}
+        {isRejected && (
+          <div className="alert alert-warning">
+            <strong>{t('rejected_message')}</strong><br />
+            {t('rejection_reason')}: {user.rejection_reason}<br />
+            {t('please_update_documents')}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>{t('email')}:</label>

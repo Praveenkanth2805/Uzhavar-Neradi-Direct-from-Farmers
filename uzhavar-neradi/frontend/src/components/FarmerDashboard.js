@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate, NavLink, Routes, Route } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import FarmerHome from './farmer/FarmerHome';
@@ -13,7 +13,16 @@ import FarmerEditProduct from './farmer/FarmerEditProduct';
 
 const FarmerDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    // If user is not approved and not already on profile page, redirect to profile
+    if (user && !user.is_approved && !location.pathname.includes('/farmer/profile')) {
+      navigate('/farmer/profile');
+    }
+  }, [user, location, navigate]);
 
   return (
     <div className={`dashboard-role ${user?.role || 'farmer'}`}>
