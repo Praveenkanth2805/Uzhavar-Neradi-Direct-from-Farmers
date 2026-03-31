@@ -48,11 +48,11 @@ class UserDetailSerializer(serializers.ModelSerializer):
                   'land_photo', 'vehicle_photo', 'license_photo', 'date_joined')
                   
 class UserDetailSerializer(serializers.ModelSerializer):
-    class Meta:
+   class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'phone', 'role',
-        'address', 'is_approved', 'language', 'upi_id', 'date_joined', 'last_login')
-        read_only_fields = ('id', 'date_joined', 'last_login')
+        fields = ('id', 'username', 'email', 'phone', 'role', 'is_approved', 'is_active', 'is_rejected',
+                  'language', 'upi_id', 'address', 'latitude', 'longitude',
+                  'land_photo', 'vehicle_photo', 'license_photo', 'rejection_reason', 'date_joined')
 
 class FarmerProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:

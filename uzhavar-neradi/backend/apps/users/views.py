@@ -7,6 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from .models import User, OTP
+from rest_framework.permissions import IsAuthenticated
 from .serializers import (
     UserRegistrationSerializer, OTPVerifySerializer,
     LoginSerializer, UserDetailSerializer, 
@@ -86,9 +87,7 @@ class LoginView(generics.GenericAPIView):
         password = serializer.validated_data['password']
         user = authenticate(request, username=email, password=password)
         if user and user.is_active:
-            if not user.is_approved:
-                return Response({'error': 'Your account is not approved by admin yet. Please wait.'},
-                                status=status.HTTP_403_FORBIDDEN)
+            # Remove the check for is_approved here
             refresh = RefreshToken.for_user(user)
             return Response({
                 'refresh': str(refresh),
@@ -136,11 +135,16 @@ class UpdateFarmerUPIView(generics.UpdateAPIView):
         return user
 
 class UserProfileUpdateView(generics.UpdateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     serializer_class = UserProfileUpdateSerializer
 
     def get_object(self):
         return self.request.user
-    def update(self, request, *args, **kwargs):
-        print("Received data:", request.data)
-        return super().update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        user = self.get_object()
+        # If the user was rejected, clear the flag and set them as pending again
+        if user.is_rejected:
+            user.is_rejected = False
+            user.save()
+        serializer.save()

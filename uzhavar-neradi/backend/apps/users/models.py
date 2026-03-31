@@ -27,6 +27,8 @@ class User(AbstractUser):
     address = models.TextField(blank=True, help_text="Full address for delivery/pickup")
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    is_rejected = models.BooleanField(default=False)
+    rejection_reason = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         # If address changed and is not empty, geocode it

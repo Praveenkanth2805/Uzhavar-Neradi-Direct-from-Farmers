@@ -15,8 +15,7 @@ from .serializers import SettingSerializer
 class PendingUsersView(generics.ListAPIView):
     permission_classes = [permissions.IsAdminUser]
     serializer_class = UserDetailSerializer
-    queryset = User.objects.filter(is_approved=False, is_active=True)
-
+    queryset = User.objects.filter(is_approved=False, is_rejected=False, is_active=True)
 
 
 # ---------- Reports ----------
@@ -155,11 +154,14 @@ class RejectUserView(APIView):
 
     def post(self, request, user_id):
         try:
-            user = User.objects.get(id=user_id, is_approved=False, is_active=True)
+            user = User.objects.get(id=user_id, is_approved=False, is_rejected=False, is_active=True)
         except User.DoesNotExist:
-            return Response({'error': 'User not found or already approved'}, status=404)
+            return Response({'error': 'User not found or already approved/rejected'}, status=404)
 
         remark = request.data.get('remark', '')
+        user.is_rejected = True
+        user.save()
+
         # Send rejection email
         subject = "Your Uzhavar Neradi Account Application"
         html_message = render_to_string('emails/rejection_email.html', {
@@ -167,15 +169,9 @@ class RejectUserView(APIView):
             'remark': remark,
         })
         plain_message = strip_tags(html_message)
-        from_email = settings.DEFAULT_FROM_EMAIL
-        to_email = user.email
-        send_mail(subject, plain_message, from_email, [to_email], html_message=html_message)
+        send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL, [user.email], html_message=html_message)
 
-        # Deactivate user instead of deleting
-        user.is_active = False
-        user.save()
-
-        return Response({'status': 'rejected and email sent'})
+        return Response({'status': 'rejected'})
 
 #...............aprove.........
 
