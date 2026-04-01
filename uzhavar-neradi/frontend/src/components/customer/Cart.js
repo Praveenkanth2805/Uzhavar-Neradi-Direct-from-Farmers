@@ -3,13 +3,21 @@ import { useCart } from '../../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../contexts/AuthContext';
 import Button from '../Button/Button';
 
 const Cart = () => {
   const { cart, removeFromCart, updateQuantity, getCartTotal } = useCart();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { t } = useTranslation();
 
+  const getCheckoutPath = () => {
+    if (user?.role === 'farmer') return '/farmer/checkout';
+    if (user?.role === 'delivery') return '/delivery/checkout';
+    return '/customer/checkout';
+  };
+  
   const handleRemove = (item) => {
     removeFromCart(item.product.id);
     toast.info(`${item.product.name} ${t('removed_from_cart')}`);

@@ -382,6 +382,7 @@ const resources = {
   "land_photo": "Land Photo",
   "vehicle_photo": "Vehicle Photo",
   "license_photo": "License Photo",
+  "pending_approval_message":"wait until admin approve",
         }
     },
     ta: {
@@ -755,6 +756,7 @@ const resources = {
   "land_photo": "நில புகைப்படம்",
   "vehicle_photo": "வாகன புகைப்படம்",
   "license_photo": "உரிம புகைப்படம்",
+  "pending_approval_message":"",
         }
     }
 };

@@ -10,6 +10,8 @@ import FarmerProfile from './farmer/FarmerProfile';
 import CustomerBrowseProducts from './customer/CustomerBrowseProducts';
 import CustomerOrders from './customer/CustomerOrders';
 import FarmerEditProduct from './farmer/FarmerEditProduct';
+import Cart from './customer/Cart';               // new
+import Checkout from './customer/Checkout';     // new
 
 const FarmerDashboard = () => {
   const { user } = useAuth();
@@ -18,7 +20,6 @@ const FarmerDashboard = () => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    // If user is not approved and not already on profile page, redirect to profile
     if (user && !user.is_approved && !location.pathname.includes('/farmer/profile')) {
       navigate('/farmer/profile');
     }
@@ -49,6 +50,9 @@ const FarmerDashboard = () => {
         <NavLink to="/farmer/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           {t('profile')}
         </NavLink>
+        <NavLink to="/farmer/cart" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          {t('cart')}
+        </NavLink>
       </nav>
       <Routes>
         <Route index element={<FarmerHome />} />
@@ -59,6 +63,8 @@ const FarmerDashboard = () => {
         <Route path="purchases" element={<CustomerOrders />} />
         <Route path="profile" element={<FarmerProfile />} />
         <Route path="edit-product/:id" element={<FarmerEditProduct />} />
+        <Route path="cart" element={<Cart />} />
+        <Route path="checkout" element={<Checkout />} />
       </Routes>
     </div>
   );

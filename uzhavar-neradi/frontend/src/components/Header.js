@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import Button from './Button/Button'; // assuming Button component exists
+import Button from './Button/Button';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -25,6 +25,14 @@ const Header = () => {
   const toggleLanguage = () => {
     const newLang = i18n.language === 'en' ? 'ta' : 'en';
     i18n.changeLanguage(newLang);
+  };
+
+  // Get the correct cart path based on user role
+  const getCartPath = () => {
+    if (!user) return '/customer/cart'; // fallback
+    if (user.role === 'farmer') return '/farmer/cart';
+    if (user.role === 'delivery') return '/delivery/cart';
+    return '/customer/cart';
   };
 
   return (
@@ -50,6 +58,9 @@ const Header = () => {
         <div className="flex items-center gap-sm">
           {user ? (
             <>
+              {/*<Link to={getCartPath()} className="nav-link">
+                {t('cart')
+              </Link>}*/}
               <span className="flex items-center gap-xs">
                 <strong>{user.username}</strong>
                 <span className="role-accent-text" style={{ fontWeight: 'bold', color: roleAccent }}>

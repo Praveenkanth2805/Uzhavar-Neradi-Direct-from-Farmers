@@ -25,10 +25,11 @@ const Checkout = () => {
   const [deliveryMethods, setDeliveryMethods] = useState({});
   const [distances, setDistances] = useState({});
   const [calculating, setCalculating] = useState(false);
+  const [calculated, setCalculated] = useState(false); // to prevent repeated calculations
 
   const ordersByFarmer = getItemsByFarmer();
 
-  // Load user coordinates from profile (if available)
+  // Load user coordinates from profile on mount
   useEffect(() => {
     if (user?.latitude && user?.longitude) {
       setCustomerLat(user.latitude);
@@ -37,44 +38,61 @@ const Checkout = () => {
     }
   }, [user]);
 
-  // Fetch distances when customer coordinates are available
-  useEffect(() => {
-    if (!customerLat || !customerLng || ordersByFarmer.length === 0) return;
-    const fetchDistances = async () => {
+  const handleDeliveryMethodChange = async (farmerId, method) => {
+    // Update state
+    setDeliveryMethods(prev => ({ ...prev, [farmerId]: method }));
+
+    // If method is not pickup and we haven't calculated distance for this farmer yet, calculate now
+    if (method !== 'pickup' && customerLat && customerLng && !distances[farmerId]) {
       setCalculating(true);
-      const newDistances = {};
-      for (const group of ordersByFarmer) {
-        try {
-          const res = await api.post('/orders/calculate-distance/', {
-            farmer_id: group.farmerId,
-            customer_lat: customerLat,
-            customer_lng: customerLng,
-          });
-          newDistances[group.farmerId] = {
+      try {
+        const res = await api.post('/orders/calculate-distance/', {
+          farmer_id: farmerId,
+          customer_lat: customerLat,
+          customer_lng: customerLng,
+        });
+        setDistances(prev => ({
+          ...prev,
+          [farmerId]: {
             distance: res.data.distance,
             fee: res.data.fee,
-          };
-        } catch (err) {
-          console.error(`Failed to get distance for farmer ${group.farmerId}`, err);
-          // On error, treat as flat fee (if the backend returns fee, we'll get it; else null)
-          newDistances[group.farmerId] = { distance: null, fee: null };
-        }
+          },
+        }));
+      } catch (err) {
+        console.error(`Failed to get distance for farmer ${farmerId}`, err);
+        // Fallback: use flat fee from settings (we'll use the stored value; we'll fetch it once)
+        const flatFee = await getFlatDeliveryFee();
+        setDistances(prev => ({
+          ...prev,
+          [farmerId]: { distance: null, fee: flatFee },
+        }));
+        toast.warn(t('delivery_fee_unavailable'));
+      } finally {
+        setCalculating(false);
       }
-      setDistances(newDistances);
-      setCalculating(false);
-    };
-    const timer = setTimeout(fetchDistances, 500);
-    return () => clearTimeout(timer);
-  }, [customerLat, customerLng, ordersByFarmer]);
+    }
+  };
 
-  const handleDeliveryMethodChange = (farmerId, method) => {
-    setDeliveryMethods({ ...deliveryMethods, [farmerId]: method });
+  // Helper to fetch flat delivery fee from settings (cached)
+  const getFlatDeliveryFee = async () => {
+    if (window.flatDeliveryFee) return window.flatDeliveryFee;
+    try {
+      const res = await api.get('/admin/settings/?key=delivery_fee');
+      const fee = res.data.find(s => s.key === 'delivery_fee')?.value;
+      const flat = parseFloat(fee) || 0;
+      window.flatDeliveryFee = flat;
+      return flat;
+    } catch (err) {
+      return 0;
+    }
   };
 
   const handlePlaceSelected = ({ address, lat, lng }) => {
     setAddress(address);
     setCustomerLat(parseFloat(lat.toFixed(6)));
     setCustomerLng(parseFloat(lng.toFixed(6)));
+    // Reset distances because coordinates changed – user may need to recalc
+    setDistances({});
   };
 
   const calculateTotal = () => {
@@ -82,7 +100,7 @@ const Checkout = () => {
     for (const group of ordersByFarmer) {
       const method = deliveryMethods[group.farmerId] || 'pickup';
       if (method !== 'pickup' && distances[group.farmerId]) {
-        total += distances[group.farmerId].fee || 0;
+        total += distances[group.farmerId].fee;
       }
     }
     return total;
@@ -229,7 +247,7 @@ const Checkout = () => {
                     </>
                   ) : (
                     <>
-                      {t('flat_delivery_fee')}: ₹{distances[group.farmerId].fee || 0}
+                      {t('flat_delivery_fee')}: ₹{distances[group.farmerId].fee}
                       <br />
                       <small>{t('delivery_fee_fallback_note')}</small>
                     </>
@@ -242,7 +260,7 @@ const Checkout = () => {
 
         <div className="flex justify-between items-center mt-lg">
           <h3>{t('total')}: ₹{calculateTotal()}</h3>
-          <Button type="submit" variant="primary" disabled={loading || calculating}>
+          <Button type="submit" variant="primary" disabled={loading}>
             {loading ? t('placing_order') : t('place_order')}
           </Button>
         </div>

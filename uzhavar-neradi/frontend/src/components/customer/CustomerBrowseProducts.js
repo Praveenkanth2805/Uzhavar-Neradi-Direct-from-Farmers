@@ -4,13 +4,21 @@ import { useCart } from '../../contexts/CartContext';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import Button from '../Button/Button';
 
 const CustomerBrowseProducts = () => {
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const { addToCart, clearCart } = useCart();
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const getCheckoutPath = () => {
+    if (user?.role === 'farmer') return '/farmer/checkout';
+    if (user?.role === 'delivery') return '/delivery/checkout';
+    return '/customer/checkout';
+  };
 
   useEffect(() => {
     fetchProducts();
@@ -26,9 +34,9 @@ const CustomerBrowseProducts = () => {
   };
 
   const handlePreOrder = (product) => {
-    clearCart();                     // clear cart before pre‑order
-    addToCart(product);             // add this product (quantity 1)
-    navigate('/customer/checkout'); // go directly to checkout
+    clearCart();
+    addToCart(product);
+    navigate(getCheckoutPath());
   };
 
   const handleAddToCart = (product) => {

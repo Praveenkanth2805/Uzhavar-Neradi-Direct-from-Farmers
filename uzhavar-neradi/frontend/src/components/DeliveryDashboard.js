@@ -7,6 +7,8 @@ import DeliveryProfile from './delivery/DeliveryProfile';
 import CustomerBrowseProducts from './customer/CustomerBrowseProducts';
 import CustomerOrders from './customer/CustomerOrders';
 import DeliveryHome from './delivery/DeliveryHome';
+import Cart from './customer/Cart';
+import Checkout from './customer/Checkout';
 
 const DeliveryDashboard = () => {
   const { user } = useAuth();
@@ -39,6 +41,9 @@ const DeliveryDashboard = () => {
         <NavLink to="/delivery/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           {t('profile')}
         </NavLink>
+        <NavLink to="/delivery/cart" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          {t('cart')}
+        </NavLink>
       </nav>
       <Routes>
         <Route index element={<DeliveryHome />} />
@@ -46,6 +51,8 @@ const DeliveryDashboard = () => {
         <Route path="browse" element={<CustomerBrowseProducts />} />
         <Route path="purchases" element={<CustomerOrders />} />
         <Route path="profile" element={<DeliveryProfile />} />
+        <Route path="cart" element={<Cart />} />
+        <Route path="checkout" element={<Checkout />} />
       </Routes>
     </div>
   );
