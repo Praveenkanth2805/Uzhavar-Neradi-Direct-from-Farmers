@@ -3,14 +3,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import OrderItem
 from django_filters.rest_framework import DjangoFilterBackend
-from apps.users.models import User   # <-- IMPORT ADDED HERE
-from apps.payments.models import Payment  # add this import
+from apps.users.models import User
+from apps.payments.models import Payment
 from django.db.models import F
 from django.core.mail import send_mail
 from django.conf import settings
 from apps.delivery.utils import find_nearest_delivery_partner
 from apps.delivery.models import DeliveryAssignment
-from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
@@ -76,7 +75,7 @@ class MarkOrderPaidView(generics.UpdateAPIView):
         # Update the associated Payment record
         try:
             payment = Payment.objects.get(order=order)
-            payment.status = 'customer_marked'   # or 'pending'? we'll use 'customer_marked'
+            payment.status = 'customer_marked'
             payment.transaction_id = order.transaction_id
             payment.save()
         except Payment.DoesNotExist:
@@ -202,143 +201,7 @@ from apps.products.models import Product
 from apps.payments.models import Payment
 from apps.users.models import User
 from apps.admin_tools.models import Setting
-from apps.users.utils import haversine_distance   # <-- import distance function
 
-class OrderCreateView(generics.CreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OrderSerializer
-
-    def create(self, request, *args, **kwargs):
-        user = request.user
-        data = request.data
-
-        farmer_id = data.get('farmer')
-        items_data = data.get('items', [])
-        delivery_address = data.get('delivery_address')
-        payment_method = data.get('payment_method')
-        total_amount = data.get('total_amount')          # this is subtotal (cart total)
-        delivery_method = data.get('delivery_method')
-        customer_lat = data.get('customer_lat')
-        customer_lng = data.get('customer_lng')
-
-        # Validate farmer
-        try:
-            farmer = User.objects.get(id=farmer_id, role='farmer')
-        except User.DoesNotExist:
-            return Response({'error': 'Invalid farmer'}, status=400)
-
-        delivery_fee = 0
-
-        # Calculate delivery fee if not pickup
-        if delivery_method != 'pickup':
-            # Try distance‑based calculation
-            if (farmer.latitude and farmer.longitude and 
-                customer_lat is not None and customer_lng is not None):
-                distance = haversine_distance(
-                    farmer.latitude, farmer.longitude,
-                    float(customer_lat), float(customer_lng)
-                )
-                delivery_fee = distance * 5   # ₹5 per km
-            else:
-                # Fallback to flat fee from settings
-                try:
-                    fee_setting = Setting.objects.get(key='delivery_fee')
-                    delivery_fee = float(fee_setting.value)
-                except Setting.DoesNotExist:
-                    delivery_fee = 0
-
-        # Add delivery fee to total
-        total_amount_with_fee = total_amount + delivery_fee
-
-        # Validate stock
-        insufficient_products = []
-        for item in items_data:
-            try:
-                product = Product.objects.get(id=item['product'])
-                if product.is_preorder:
-                    if product.preorder_max_quantity and item['quantity'] > product.preorder_max_quantity:
-                        return Response({'error': f'Preorder quantity for {product.name} exceeds maximum allowed ({product.preorder_max_quantity})'}, status=400)
-                else:
-                    if product.stock < item['quantity']:
-                        insufficient_products.append(product.name)
-            except Product.DoesNotExist:
-                return Response({'error': f'Product {item["product"]} not found'}, status=400)
-
-        if insufficient_products:
-            return Response(
-                {'error': f'Insufficient stock for: {", ".join(insufficient_products)}'},
-                status=400
-            )
-
-        # Create order (store customer coordinates if provided)
-        order = Order.objects.create(
-            customer=user,
-            farmer=farmer,
-            delivery_address=delivery_address,
-            payment_method=payment_method,
-            total_amount=total_amount_with_fee,
-            status='pending',
-            payment_status='pending',
-            delivery_method=delivery_method,
-            customer_lat=customer_lat,   # may be null
-            customer_lng=customer_lng     # may be null
-        )
-
-        # Create items and update stock
-        for item in items_data:
-            # product = Product.objects.get(id=item['product'])
-            # if not product.is_preorder:
-            #     product.stock = F('stock') - item['quantity']
-            #     product.save(update_fields=['stock'])
-            #     product.refresh_from_db()
-            product = Product.objects.get(id=item['product'])
-            if not product.is_preorder:
-                product.stock = F('stock') - item['quantity']
-                product.save(update_fields=['stock'])
-                product.refresh_from_db()
-
-            OrderItem.objects.create(
-                order=order,
-                product=product,
-                quantity=item['quantity'],
-                price=product.price
-            )
-
-            if product.stock == 0:
-                send_mail(
-                    subject="Your product is out of stock",
-                    message=f"Your product '{product.name}' is now out of stock.",
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[product.farmer.email],
-                    fail_silently=True,
-                )
-
-        # Create payment record
-        Payment.objects.create(
-            order=order,
-            amount=total_amount_with_fee,
-            method=payment_method,
-            status='pending',
-            transaction_id=None
-        )
-        #email for new order
-        site_url = settings.SITE_URL
-        subject = f"New Order #{order.id} Received"
-        html_message = render_to_string('emails/order_placed.html', {
-            'farmer_name': farmer.username,
-            'order_id': order.id,
-            'customer_name': user.username,
-            'total_amount': order.total_amount,
-            'delivery_method': order.delivery_method,
-            'delivery_address': order.delivery_address,
-            'site_url': site_url,
-        })
-        plain_message = strip_tags(html_message)
-        send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL, [farmer.email], html_message=html_message)
-
-        serializer = self.get_serializer(order)
-        return Response(serializer.data, status=201)
-        
 class OrderCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = OrderSerializer
@@ -403,9 +266,10 @@ class OrderCreateView(generics.CreateAPIView):
             delivery_method=delivery_method,
             customer_lat=customer_lat,
             customer_lng=customer_lng,
+            delivery_fee=flat_delivery_fee,
         )
         print(f"Order {order.id} saved with coordinates: {order.customer_lat}, {order.customer_lng}")
-        site_url = settings.SITE_URL  # you must add SITE_URL to settings (e.g., from .env)
+        site_url = settings.SITE_URL
         subject = f"New Order #{order.id} Received"
         html_message = render_to_string('emails/order_placed.html', {
             'farmer_name': farmer.username,
@@ -651,13 +515,15 @@ class CalculateDistanceView(APIView):
             farmer.latitude, farmer.longitude,
             float(customer_lat), float(customer_lng)
         )
-        fee = distance * 5
+        per_km = float(Setting.objects.get(key='delivery_charge').value)
+        fee = distance * per_km
+        #fee = distance * 5
         return Response({'distance': round(distance, 2), 'fee': round(fee, 2)})
         
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
-from apps.delivery.utils import find_nearest_delivery_partner  # we defined earlier
+from apps.delivery.utils import find_nearest_delivery_partner
 
 class NearestDeliveryPartnerView(APIView):
     permission_classes = [IsAdminUser]

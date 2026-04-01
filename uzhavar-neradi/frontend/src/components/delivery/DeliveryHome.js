@@ -10,6 +10,16 @@ const DeliveryHome = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const [earnings, setEarnings] = useState(0);
+
+useEffect(() => {
+    const fetchEarnings = async () => {
+        const res = await api.get('/delivery/stats/');
+        setEarnings(res.data.total_earnings);
+    };
+    fetchEarnings();
+}, []);
+
   useEffect(() => {
     fetchStats();
   }, []);
@@ -49,6 +59,10 @@ const DeliveryHome = () => {
           <h3>{t('not_delivered')}</h3>
           <p>{stats.not_delivered}</p>
         </div>
+        <div className="metric-card">
+    <h3>{t('total_earnings')}</h3>
+    <p>₹{earnings}</p>
+</div>
       </div>
 
       {/* Recent Deliveries */}

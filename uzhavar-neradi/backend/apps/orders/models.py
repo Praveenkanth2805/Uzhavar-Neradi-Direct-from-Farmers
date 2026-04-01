@@ -39,6 +39,7 @@ class Order(models.Model):
 
     cancellation_reason = models.TextField(blank=True, null=True)
     delivery_remark = models.TextField(blank=True, null=True)
+    delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     customer_lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     customer_lng = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)

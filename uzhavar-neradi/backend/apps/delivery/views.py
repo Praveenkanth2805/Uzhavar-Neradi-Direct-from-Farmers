@@ -281,5 +281,25 @@ class CalculateDistanceView(APIView):
             farm_lat, farm_lng = farmer.latitude, farmer.longitude
 
         distance = haversine_distance(cust_lat, cust_lng, farm_lat, farm_lng)
-        fee = distance * 5
+        per_km = float(Setting.objects.get(key='delivery_charge').value)
+        fee = distance * per_km
+        #fee = distance * 5
         return Response({'distance': round(distance, 2), 'fee': round(fee, 2)})
+class DeliveryPartnerStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if user.role != 'delivery':
+            return Response({'error': 'Not a delivery partner'}, status=400)
+
+        # Sum of delivery fees from orders assigned to this partner that are delivered
+        total_earnings = Order.objects.filter(
+            deliveryassignment__delivery_partner=user,
+            status='delivered'
+        ).aggregate(total=Sum('delivery_fee'))['total'] or 0
+
+        # You could also include number of deliveries, etc.
+        return Response({
+            'total_earnings': total_earnings,
+        })
