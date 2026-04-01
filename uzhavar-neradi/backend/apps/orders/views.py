@@ -355,6 +355,7 @@ class OrderCreateView(generics.CreateAPIView):
         delivery_method = data.get('delivery_method')
         customer_lat = data.get('customer_lat')
         customer_lng = data.get('customer_lng')
+        print(f"Saving order with coordinates: {customer_lat}, {customer_lng}")
 
         # Validate farmer
         try:
@@ -399,8 +400,11 @@ class OrderCreateView(generics.CreateAPIView):
             total_amount=total_amount,
             status='pending',
             payment_status='pending',
-            delivery_method=delivery_method
+            delivery_method=delivery_method,
+            customer_lat=customer_lat,
+            customer_lng=customer_lng,
         )
+        print(f"Order {order.id} saved with coordinates: {order.customer_lat}, {order.customer_lng}")
         site_url = settings.SITE_URL  # you must add SITE_URL to settings (e.g., from .env)
         subject = f"New Order #{order.id} Received"
         html_message = render_to_string('emails/order_placed.html', {
@@ -470,6 +474,8 @@ class FarmerOrderUpdateView(generics.UpdateAPIView):
         order = self.get_object()
         new_status = request.data.get('status')
         allowed_statuses = ['confirmed', 'shipped']
+        print(f"[DEBUG] Order {order.id} – current status: {order.status}, delivery_method: {order.delivery_method}")
+        print(f"[DEBUG] New status from request: {new_status}")
 
         # For farmer drop, allow delivered after shipped
         if order.delivery_method == 'drop' and new_status == 'delivered':
@@ -491,15 +497,20 @@ class FarmerOrderUpdateView(generics.UpdateAPIView):
         # Update status
         order.status = new_status
         order.save()
-
+        print(f"[DEBUG] Order {order.id} saved with new status: {order.status}")
         # Auto-assign delivery partner if order is shipped and uses delivery partner
         if new_status == 'shipped' and order.delivery_method == 'delivery':
+            print(f"[DEBUG] Entering auto-assignment block for order {order.id}")
+            print(f"[DEBUG] Customer coordinates: lat={order.customer_lat}, lng={order.customer_lng}")
             # Only assign if not already assigned
             if not DeliveryAssignment.objects.filter(order=order).exists():
                 if order.customer_lat and order.customer_lng:
+                    print(f"[DEBUG] Calling find_nearest_delivery_partner with ({order.customer_lat}, {order.customer_lng})")
                     partner = find_nearest_delivery_partner(order.customer_lat, order.customer_lng)
+                    print(f"[DEBUG] Partner found: {partner}")
                     if partner:
                         assignment = DeliveryAssignment.objects.create(order=order, delivery_partner=partner)
+                        print(f"[DEBUG] Assignment created: {assignment}")
                         # Send email to the assigned partner
                         site_url = settings.SITE_URL
                         subject = f"New Delivery Assignment – Order #{order.id}"
@@ -519,8 +530,14 @@ class FarmerOrderUpdateView(generics.UpdateAPIView):
                         )
                     else:
                         print(f"No delivery partner found for order {order.id}")
+                        print("[DEBUG] No partner found")
                 else:
                     print(f"Customer coordinates missing for order {order.id}")
+                    print("[DEBUG] Customer coordinates missing")
+            else:
+                print("[DEBUG] Delivery assignment already exists")
+        else:
+            print(f"[DEBUG] Auto-assignment not triggered (status={new_status}, delivery_method={order.delivery_method})")
 
         return Response({'status': 'updated'})
         

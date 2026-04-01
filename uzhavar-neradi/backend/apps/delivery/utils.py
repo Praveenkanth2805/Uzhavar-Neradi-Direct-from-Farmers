@@ -1,8 +1,5 @@
-import googlemaps
-from django.conf import settings
 from math import radians, cos, sin, asin, sqrt
 
-# Haversine formula for fallback
 def haversine_distance(lat1, lon1, lat2, lon2):
     # convert decimal degrees to radians
     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
@@ -16,7 +13,7 @@ def haversine_distance(lat1, lon1, lat2, lon2):
 def find_nearest_delivery_partner(customer_lat, customer_lng):
     """
     Returns the nearest approved delivery partner with coordinates.
-    Uses Google Distance Matrix if available, otherwise Haversine.
+    Uses straight‑line (Haversine) distance.
     """
     print(f"Finding nearest partner for lat={customer_lat}, lng={customer_lng}")
     from apps.users.models import User
@@ -25,27 +22,6 @@ def find_nearest_delivery_partner(customer_lat, customer_lng):
     if not partners:
         return None
 
-    # If you have Distance Matrix API enabled, use it for more accurate road distance
-    if settings.GOOGLE_MAPS_API_KEY:
-        gmaps = googlemaps.Client(key=settings.GOOGLE_MAPS_API_KEY)
-        origins = [f"{customer_lat},{customer_lng}"]
-        destinations = [f"{p.latitude},{p.longitude}" for p in partners]
-        try:
-            matrix = gmaps.distance_matrix(origins, destinations, mode='driving')
-            elements = matrix['rows'][0]['elements']
-            best = None
-            min_dist = float('inf')
-            for i, element in enumerate(elements):
-                if element['status'] == 'OK':
-                    dist = element['distance']['value'] / 1000  # km
-                    if dist < min_dist:
-                        min_dist = dist
-                        best = partners[i]
-            return best
-        except Exception as e:
-            print(f"Distance Matrix error: {e}")
-
-    # Fallback to Haversine (straight-line)
     best = None
     min_dist = float('inf')
     for p in partners:
