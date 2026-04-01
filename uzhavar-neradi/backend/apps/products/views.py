@@ -96,7 +96,14 @@ class FarmerProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 class CustomerProductListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ProductSerializer
-    queryset = Product.objects.filter(is_approved=True).order_by('-created_at')
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description']
     ordering_fields = ['price', 'created_at']
+
+    def get_queryset(self):
+        qs = Product.objects.filter(is_approved=True)
+        user = self.request.user
+        if user.role == 'farmer':
+            # Exclude products from the logged-in farmer
+            qs = qs.exclude(farmer=user)
+        return qs.order_by('-created_at')
