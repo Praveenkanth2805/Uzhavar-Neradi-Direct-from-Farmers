@@ -23,6 +23,7 @@ class Order(models.Model):
         ('drop', 'Farmer Drop'),
         ('delivery', 'Delivery Partner'),
     ))
+    
     delivery_address = models.TextField()
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=(('cod', 'COD'), ('upi', 'UPI/QR')))

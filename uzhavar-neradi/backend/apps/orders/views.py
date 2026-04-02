@@ -227,16 +227,24 @@ class OrderCreateView(generics.CreateAPIView):
             return Response({'error': 'Invalid farmer'}, status=400)
 
         # Get flat delivery fee from settings
-        flat_delivery_fee = 0
-        try:
-            fee_setting = Setting.objects.get(key='delivery_fee')
-            flat_delivery_fee = float(fee_setting.value)
-        except Setting.DoesNotExist:
-            pass  # default 0
+        # flat_delivery_fee = 0
+        # try:
+        #     fee_setting = Setting.objects.get(key='delivery_fee')
+        #     flat_delivery_fee = float(fee_setting.value)
+        # except Setting.DoesNotExist:
+        #     pass  # default 0
 
         # Add delivery fee if not pickup
+        
+        # if delivery_method != 'pickup':
+        #     total_amount = total_amount + flat_delivery_fee
+
+        # Get delivery_fee from frontend (already calculated by CalculateDistanceView)
+        delivery_fee = data.get('delivery_fee', 0)
         if delivery_method != 'pickup':
-            total_amount = total_amount + flat_delivery_fee
+            total_amount = total_amount + delivery_fee 
+        else:
+            delivery_fee = 0
 
         # Validate stock
         insufficient_products = []
@@ -254,6 +262,8 @@ class OrderCreateView(generics.CreateAPIView):
                 status=400
             )
 
+        print("OrderCreateView received data:", data)
+
         # Create order
         order = Order.objects.create(
             customer=user,
@@ -266,7 +276,8 @@ class OrderCreateView(generics.CreateAPIView):
             delivery_method=delivery_method,
             customer_lat=customer_lat,
             customer_lng=customer_lng,
-            delivery_fee=flat_delivery_fee,
+            #delivery_fee=flat_delivery_fee,
+            delivery_fee=delivery_fee,
         )
         print(f"Order {order.id} saved with coordinates: {order.customer_lat}, {order.customer_lng}")
         site_url = settings.SITE_URL

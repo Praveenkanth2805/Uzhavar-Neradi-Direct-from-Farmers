@@ -6,43 +6,36 @@ import Button from '../Button/Button';
 
 const DeliveryHome = () => {
   const [stats, setStats] = useState(null);
+  const [earnings, setEarnings] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const [earnings, setEarnings] = useState(0);
-
-useEffect(() => {
-    const fetchEarnings = async () => {
-        const res = await api.get('/delivery/stats/');
-        setEarnings(res.data.total_earnings);
-    };
-    fetchEarnings();
-}, []);
-
   useEffect(() => {
-    fetchStats();
+    const fetchData = async () => {
+      try {
+        const [statsRes, earningsRes] = await Promise.all([
+          api.get('/delivery/stats/'),
+          api.get('/delivery/earnings/'),
+        ]);
+        setStats(statsRes.data);
+        setEarnings(earningsRes.data.total_earnings);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
-
-  const fetchStats = async () => {
-    try {
-      const res = await api.get('/delivery/stats/');
-      setStats(res.data);
-    } catch (err) {
-      console.error('Failed to fetch delivery stats', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) return <div className="container mt-md text-center">{t('loading')}</div>;
 
   return (
     <div className="container mt-md">
       <h2>{t('delivery_overview')}</h2>
-
-      {/* Key Metrics Cards */}
       <div className="flex gap-md wrap" style={{ marginBottom: 'var(--spacing-lg)' }}>
+        {/* existing metric cards */}
         <div className="metric-card">
           <h3>{t('total_assigned')}</h3>
           <p>{stats.total_assigned}</p>
@@ -60,9 +53,9 @@ useEffect(() => {
           <p>{stats.not_delivered}</p>
         </div>
         <div className="metric-card">
-    <h3>{t('total_earnings')}</h3>
-    <p>₹{earnings}</p>
-</div>
+          <h3>{t('earnings')}</h3>
+          <p>₹{earnings}</p>
+        </div>
       </div>
 
       {/* Recent Deliveries */}
@@ -85,12 +78,12 @@ useEffect(() => {
               <tbody>
                 {stats.recent_deliveries.map(o => (
                   <tr key={o.id}>
-                    <td>{o.id}</td>
-                    <td>{o.customer}</td>
-                    <td>{o.address}</td>
-                    <td>{o.status}</td>
-                    <td>{new Date(o.date).toLocaleDateString()}</td>
-                  </tr>
+                    <td>{o.id} </td>
+                    <td>{o.customer} </td>
+                    <td> {o.address} </td>
+                    <td> {o.status} </td>
+                     <td>{new Date(o.date).toLocaleDateString()} </td>
+                   </tr>
                 ))}
               </tbody>
             </table>
