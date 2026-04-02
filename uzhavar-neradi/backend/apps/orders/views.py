@@ -127,7 +127,13 @@ class FarmerDashboardStatsView(APIView):
         completed_orders = orders.filter(status='delivered').count()
 
         # Earnings (sum of delivered orders)
-        earnings = orders.filter(status='delivered').aggregate(total=Sum('total_amount'))['total'] or 0
+        #earnings = orders.filter(status='delivered').aggregate(total=Sum('total_amount'))['total'] or 0
+        from django.db.models import F, Sum
+        earnings = orders.filter(status='delivered').aggregate(
+            total=Sum(F('total_amount') - F('delivery_fee'))
+        )['total']
+        if earnings is None:
+            earnings = 0
 
         # Recent orders (last 5)
         recent_orders = orders.order_by('-order_date')[:5]
