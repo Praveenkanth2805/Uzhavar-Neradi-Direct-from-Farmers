@@ -34,10 +34,23 @@ const CustomerBrowseProducts = () => {
   };
 
   const handlePreOrder = (product) => {
-    clearCart();
-    addToCart(product);
-    navigate(getCheckoutPath());
-  };
+  let quantityInput = prompt(`Enter quantity for ${product.name}:`, "1");
+  if (quantityInput === null) return;
+
+  let quantity = parseInt(quantityInput, 10);
+  if (isNaN(quantity) || quantity <= 0) {
+    toast.error(t('invalid_quantity'));
+    return;
+  }
+  if (product.preorder_max_quantity && quantity > product.preorder_max_quantity) {
+    toast.error(`Max preorder quantity is ${product.preorder_max_quantity}`);
+    return;
+  }
+
+  clearCart();                       // clear existing cart
+  addToCart(product, quantity);      // ✅ now adds with chosen quantity
+  navigate(getCheckoutPath());
+};
 
   const handleAddToCart = (product) => {
     addToCart(product);

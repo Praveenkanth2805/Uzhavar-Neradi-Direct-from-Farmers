@@ -9,22 +9,23 @@ const initialState = {
 const cartReducer = (state, action) => {
   switch (action.type) {
     case 'ADD_ITEM': {
-      const existing = state.items.find(item => item.product.id === action.payload.product.id);
-      if (existing) {
-        return {
-          ...state,
-          items: state.items.map(item =>
-            item.product.id === action.payload.product.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          ),
-        };
-      }
-      return {
-        ...state,
-        items: [...state.items, { product: action.payload.product, quantity: 1 }],
-      };
-    }
+  const existing = state.items.find(item => item.product.id === action.payload.product.id);
+  const newQuantity = action.payload.quantity || 1;  // ← get quantity from payload
+  if (existing) {
+    return {
+      ...state,
+      items: state.items.map(item =>
+        item.product.id === action.payload.product.id
+          ? { ...item, quantity: item.quantity + newQuantity }
+          : item
+      ),
+    };
+  }
+  return {
+    ...state,
+    items: [...state.items, { product: action.payload.product, quantity: newQuantity }],
+  };
+}
     case 'REMOVE_ITEM':
       return {
         ...state,
@@ -56,9 +57,9 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cart', JSON.stringify(state));
   }, [state]);
 
-  const addToCart = (product) => {
-    dispatch({ type: 'ADD_ITEM', payload: { product } });
-  };
+  const addToCart = (product, quantity = 1) => {
+  dispatch({ type: 'ADD_ITEM', payload: { product, quantity } });
+};
 
   const removeFromCart = (productId) => {
     dispatch({ type: 'REMOVE_ITEM', payload: { productId } });
@@ -76,7 +77,7 @@ export const CartProvider = ({ children }) => {
   const getCartTotal = () => {
     return state.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   };
-
+  
   const getItemsByFarmer = () => {
   const map = new Map();
   state.items.forEach(item => {
