@@ -10,20 +10,23 @@ const cartReducer = (state, action) => {
   switch (action.type) {
     case 'ADD_ITEM': {
   const existing = state.items.find(item => item.product.id === action.payload.product.id);
-  const newQuantity = action.payload.quantity || 1;  // ← get quantity from payload
+  const newQuantity = action.payload.quantity || 1;
+  const preorderDate = action.payload.preorderDate || null;
   if (existing) {
+    // For preorder, we might want to replace or merge? Simpler: replace with new date.
+    // We'll just update quantity and date.
     return {
       ...state,
       items: state.items.map(item =>
         item.product.id === action.payload.product.id
-          ? { ...item, quantity: item.quantity + newQuantity }
+          ? { ...item, quantity: item.quantity + newQuantity, preorderDate: preorderDate || item.preorderDate }
           : item
       ),
     };
   }
   return {
     ...state,
-    items: [...state.items, { product: action.payload.product, quantity: newQuantity }],
+    items: [...state.items, { product: action.payload.product, quantity: newQuantity, preorderDate }],
   };
 }
     case 'REMOVE_ITEM':

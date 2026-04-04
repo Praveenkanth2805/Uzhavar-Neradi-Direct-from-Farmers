@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../Button/Button';
+import PreorderModal from '../PreorderModal'; // adjust path
 
 const CustomerBrowseProducts = () => {
   const { user } = useAuth();
@@ -13,6 +14,26 @@ const CustomerBrowseProducts = () => {
   const { addToCart, clearCart } = useCart();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [showPreorderModal, setShowPreorderModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+    const handlePreOrderClick = (product) => {
+    setSelectedProduct(product);
+    setShowPreorderModal(true);
+  };
+
+    const handlePreorderConfirm = (quantity, preorderDate) => {
+    clearCart();
+    addToCart(selectedProduct, quantity, preorderDate); // pass date
+    setShowPreorderModal(false);
+    setSelectedProduct(null);
+    navigate(getCheckoutPath());
+  };
+
+  const handlePreorderCancel = () => {
+    setShowPreorderModal(false);
+    setSelectedProduct(null);
+  };
 
   const getCheckoutPath = () => {
     if (user?.role === 'farmer') return '/farmer/checkout';
@@ -81,10 +102,17 @@ const CustomerBrowseProducts = () => {
             <p className="text-sm text-muted">Farmer: {p.farmer_name}</p>
             <div className="flex gap-sm mt-sm">
               {p.is_preorder && (
-                <Button variant="accent" onClick={() => handlePreOrder(p)}>
-                  {t('pre_order')}
-                </Button>
-              )}
+    <Button variant="accent" onClick={() => handlePreOrderClick(p)}>
+      {t('pre_order')}
+    </Button>
+  )}
+  {showPreorderModal && selectedProduct && (
+    <PreorderModal
+      product={selectedProduct}
+      onConfirm={handlePreorderConfirm}
+      onCancel={handlePreorderCancel}
+    />
+  )}
               {p.stock > 0 && (
                 <Button variant="primary" onClick={() => handleAddToCart(p)}>
                   {t('add_to_cart')}

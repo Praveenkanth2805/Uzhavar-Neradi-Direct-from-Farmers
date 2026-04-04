@@ -128,6 +128,7 @@ const Checkout = () => {
           customer_lat: customerLat,
           customer_lng: customerLng,
           delivery_fee: distances[group.farmerId]?.fee || 0,
+          preorder_date: group.items[0]?.preorderDate || null,
         };
         const res = await api.post('/orders/create/', orderData);
         placedOrders.push(res.data);
