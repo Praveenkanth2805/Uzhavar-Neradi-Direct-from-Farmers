@@ -9,6 +9,7 @@ const FarmerOrders = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState(null);
+  const [assigning, setAssigning] = useState(null);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -20,7 +21,7 @@ const FarmerOrders = () => {
       const res = await api.get('/orders/farmer/orders/');
       setOrders(res.data);
     } catch (err) {
-      console.error('Error fetching orders:', err);
+      console.error(err);
       setError(t('failed_load_orders'));
     } finally {
       setLoading(false);
@@ -28,6 +29,7 @@ const FarmerOrders = () => {
   };
 
   const updateStatus = async (orderId, newStatus) => {
+    if (!newStatus) return;
     setUpdating(orderId);
     try {
       await api.patch(`/orders/farmer/orders/${orderId}/update/`, { status: newStatus });
@@ -37,6 +39,19 @@ const FarmerOrders = () => {
       toast.error(err.response?.data?.error || t('update_failed'));
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const assignDeliveryPartner = async (orderId) => {
+    setAssigning(orderId);
+    try {
+      const res = await api.post(`/orders/${orderId}/assign-delivery-partner/`);
+      toast.success(t('delivery_partner_assigned', { name: res.data.partner_name }));
+      fetchOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.error || t('assignment_failed'));
+    } finally {
+      setAssigning(null);
     }
   };
 
@@ -64,6 +79,7 @@ const FarmerOrders = () => {
               <th>{t('order_id')}</th>
               <th>{t('customer')}</th>
               <th>{t('order_type')}</th>
+              <th>{t('delivery_method')}</th>
               <th>{t('order_date')}</th>
               <th>{t('requested_date')}</th>
               <th>{t('total')}</th>
@@ -72,14 +88,19 @@ const FarmerOrders = () => {
               <th>{t('delivery_partner')}</th>
               <th>{t('delivery_status')}</th>
               <th>{t('actions')}</th>
-              </tr>
-            </thead>
+            </tr>
+          </thead>
           <tbody>
             {orders.map(o => (
               <tr key={o.id}>
                 <td>{o.id}</td>
                 <td>{o.customer_name}</td>
                 <td>{o.is_preorder ? t('preorder') : t('regular')}</td>
+                <td>
+                  {o.delivery_method === 'pickup' && t('pickup')}
+                  {o.delivery_method === 'drop' && t('farmer_drop')}
+                  {o.delivery_method === 'delivery' && t('delivery_partner')}
+                </td>
                 <td>{new Date(o.order_date).toLocaleDateString()}</td>
                 <td>{o.preorder_date || '-'}</td>
                 <td>₹{o.total_amount}</td>
@@ -92,22 +113,49 @@ const FarmerOrders = () => {
                   {o.status === 'not_delivered' && t('not_delivered_with_remark', { remark: o.delivery_remark || t('no_remark') })}
                   {!['out_for_delivery','delivered','not_delivered'].includes(o.status) && '—'}
                 </td>
-                <td>
-                  {(o.status === 'pending' || o.status === 'confirmed') && (
-                    <select
-                      onChange={(e) => updateStatus(o.id, e.target.value)}
-                      disabled={updating === o.id}
-                      value=""
-                      className="input"
-                      style={{ width: 'auto', padding: '4px 8px' }}
-                    >
-                      <option value="" disabled>{t('update_status')}</option>
-                      <option value="confirmed">{t('confirmed')}</option>
-                      <option value="shipped">{t('shipped')}</option>
-                    </select>
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  {o.delivery_method === 'drop' ? (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <select
+                        onChange={(e) => updateStatus(o.id, e.target.value)}
+                        disabled={updating === o.id}
+                        className="input"
+                        style={{ width: '140px', padding: '4px 8px' }}
+                      >
+                        <option value="" disabled>{t('update_status')}</option>
+                        <option value="confirmed">{t('confirmed')}</option>
+                        <option value="shipped">{t('shipped')}</option>
+                        <option value="out_for_delivery">{t('out_for_delivery')}</option>
+                        <option value="delivered">{t('delivered')}</option>
+                      </select>
+                      
+                      {o.status === 'shipped' && (
+                        
+                        <Button
+                          variant="secondary"
+                          size="small"
+                          onClick={() => assignDeliveryPartner(o.id)}
+                          disabled={assigning === o.id}
+                        >
+                          {assigning === o.id ? t('assigning') : t('assign_delivery_partner')}
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <select
+                        onChange={(e) => updateStatus(o.id, e.target.value)}
+                        disabled={updating === o.id}
+                        className="input"
+                        style={{ width: '140px', padding: '4px 8px' }}
+                      >
+                        <option value="" disabled>{t('update_status')}</option>
+                        <option value="confirmed">{t('confirmed')}</option>
+                        <option value="shipped">{t('shipped')}</option>
+                      </select>
+                    </>
                   )}
-                  {o.status === 'shipped' && <span>{t('awaiting_delivery')}</span>}
-                  {updating === o.id && <span> {t('updating')}</span>}
+                  {updating === o.id && <span style={{ marginLeft: '8px' }}>{t('updating')}</span>}
                 </td>
               </tr>
             ))}
