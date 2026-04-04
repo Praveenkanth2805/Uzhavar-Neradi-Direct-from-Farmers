@@ -63,7 +63,9 @@ const FarmerOrders = () => {
             <tr>
               <th>{t('order_id')}</th>
               <th>{t('customer')}</th>
-              <th>{t('date')}</th>
+              <th>{t('order_type')}</th>
+              <th>{t('order_date')}</th>
+              <th>{t('requested_date')}</th>
               <th>{t('total')}</th>
               <th>{t('status')}</th>
               <th>{t('payment')}</th>
@@ -77,7 +79,9 @@ const FarmerOrders = () => {
               <tr key={o.id}>
                 <td>{o.id}</td>
                 <td>{o.customer_name}</td>
+                <td>{o.is_preorder ? t('preorder') : t('regular')}</td>
                 <td>{new Date(o.order_date).toLocaleDateString()}</td>
+                <td>{o.preorder_date || '-'}</td>
                 <td>₹{o.total_amount}</td>
                 <td style={{ color: getStatusColor(o.status) }}>{o.status}</td>
                 <td>{o.payment_status}</td>

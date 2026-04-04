@@ -211,6 +211,7 @@ from apps.admin_tools.models import Setting
 class OrderCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = OrderSerializer
+    
 
     def create(self, request, *args, **kwargs):
         user = request.user
@@ -224,6 +225,8 @@ class OrderCreateView(generics.CreateAPIView):
         delivery_method = data.get('delivery_method')
         customer_lat = data.get('customer_lat')
         customer_lng = data.get('customer_lng')
+        preorder_date = data.get('preorder_date', None)
+        is_preorder = data.get('is_preorder', False) 
         print(f"Saving order with coordinates: {customer_lat}, {customer_lng}")
 
         # Validate farmer
@@ -284,6 +287,8 @@ class OrderCreateView(generics.CreateAPIView):
             customer_lng=customer_lng,
             #delivery_fee=flat_delivery_fee,
             delivery_fee=delivery_fee,
+            preorder_date=preorder_date,
+            is_preorder=is_preorder,
         )
         print(f"Order {order.id} saved with coordinates: {order.customer_lat}, {order.customer_lng}")
         site_url = settings.SITE_URL

@@ -44,6 +44,9 @@ class Order(models.Model):
 
     customer_lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     customer_lng = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+
+    preorder_date = models.DateField(null=True, blank=True, help_text="Customer requested preorder delivery/pickup date")
+    is_preorder = models.BooleanField(default=False)
     
     cancelled_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
