@@ -226,7 +226,8 @@ class OrderCreateView(generics.CreateAPIView):
         customer_lat = data.get('customer_lat')
         customer_lng = data.get('customer_lng')
         preorder_date = data.get('preorder_date', None)
-        is_preorder = data.get('is_preorder', False) 
+        #is_preorder = data.get('is_preorder', False) 
+        is_preorder = preorder_date is not None
         print(f"Saving order with coordinates: {customer_lat}, {customer_lng}")
 
         # Validate farmer
@@ -364,10 +365,20 @@ class FarmerOrderUpdateView(generics.UpdateAPIView):
         print(f"[DEBUG] New status from request: {new_status}")
 
         # For farmer drop, allow delivered after shipped
-        if order.delivery_method == 'drop' and new_status == 'delivered':
-            if order.status != 'shipped':
-                return Response({'error': 'Order must be shipped before delivered'}, status=400)
-            # Allow delivered
+        # if order.delivery_method == 'drop' and new_status == 'delivered':
+        #     if order.status != 'shipped':
+        #         return Response({'error': 'Order must be shipped before delivered'}, status=400)
+        #     # Allow delivered
+        # Inside FarmerOrderUpdateView.patch
+        if order.delivery_method == 'drop':
+            allowed_statuses = ['confirmed', 'shipped', 'out_for_delivery', 'delivered']
+            if new_status not in allowed_statuses:
+                return Response({'error': 'Invalid status update'}, status=400)
+            # Add transition rules if needed
+            if new_status == 'delivered' and order.status not in ['shipped', 'out_for_delivery']:
+                return Response({'error': 'Order must be shipped or out_for_delivery before delivered'}, status=400)
+            if new_status == 'out_for_delivery' and order.status != 'shipped':
+                return Response({'error': 'Order must be shipped before out_for_delivery'}, status=400)
         elif order.delivery_method == 'pickup':
             if new_status == 'delivered':
                 return Response({'error': 'Customer must confirm pickup'}, status=400)
@@ -577,3 +588,59 @@ class CustomerPickupDeliveredView(generics.UpdateAPIView):
         order.status = 'delivered'
         order.save()
         return Response({'status': 'delivered'})
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from apps.delivery.utils import find_nearest_delivery_partner
+from apps.delivery.models import DeliveryAssignment
+
+class AssignDeliveryPartnerForDropOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, order_id):
+        user = request.user
+        if user.role != 'farmer':
+            return Response({'error': 'Only farmers can assign'}, status=403)
+
+        try:
+            order = Order.objects.get(id=order_id, farmer=user, delivery_method='drop')
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found or not a drop order'}, status=404)
+
+        if order.status != 'shipped':
+            return Response({'error': 'Order must be shipped first'}, status=400)
+
+        if DeliveryAssignment.objects.filter(order=order).exists():
+            return Response({'error': 'Delivery partner already assigned'}, status=400)
+
+        if not order.customer_lat or not order.customer_lng:
+            return Response({'error': 'Customer coordinates missing'}, status=400)
+
+        partner = find_nearest_delivery_partner(order.customer_lat, order.customer_lng)
+        if not partner:
+            return Response({'error': 'No delivery partner available'}, status=404)
+
+        assignment = DeliveryAssignment.objects.create(order=order, delivery_partner=partner)
+        # Optional: change delivery_method to 'delivery' to reflect partner handling
+        order.delivery_method = 'delivery'
+        order.save(update_fields=['delivery_method'])
+
+        # Send email (copy from existing auto-assign code)
+        site_url = settings.SITE_URL
+        subject = f"New Delivery Assignment – Order #{order.id}"
+        html_message = render_to_string('emails/delivery_assigned.html', {
+            'partner_name': partner.username,
+            'order_id': order.id,
+            'customer_name': order.customer.username,
+            'delivery_address': order.delivery_address,
+            'total_amount': order.total_amount,
+            'site_url': site_url,
+        })
+        plain_message = strip_tags(html_message)
+        send_mail(
+            subject, plain_message,
+            settings.DEFAULT_FROM_EMAIL, [partner.email],
+            html_message=html_message
+        )
+        return Response({'status': 'assigned', 'partner_name': partner.username})

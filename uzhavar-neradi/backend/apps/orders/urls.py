@@ -5,7 +5,8 @@ MarkOrderPaidView,FarmerOrderListView,
 FarmerDashboardStatsView,CustomerOrderListView,
 CustomerStatsView, OrderCreateView,FarmerOrderUpdateView,
 DeliveryOrderUpdateView,CustomerCancelOrderView,FarmerSalesStatsView,
-CalculateDistanceView,CustomerPickupDeliveredView)
+CalculateDistanceView,CustomerPickupDeliveredView,
+AssignDeliveryPartnerForDropOrderView,)
 
 
 urlpatterns = [
@@ -24,4 +25,5 @@ urlpatterns = [
     path('farmer/sales-stats/', FarmerSalesStatsView.as_view(), name='farmer-sales-stats'),
     path('calculate-distance/', CalculateDistanceView.as_view(), name='calculate-distance'),
     path('customer/orders/<int:pk>/pickup/', CustomerPickupDeliveredView.as_view(), name='customer-pickup'),
+    path('orders/<int:order_id>/assign-delivery-partner/', AssignDeliveryPartnerForDropOrderView.as_view(), name='assign-delivery-partner'),
 ]
