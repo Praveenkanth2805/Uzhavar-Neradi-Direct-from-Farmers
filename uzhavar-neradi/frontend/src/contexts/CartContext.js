@@ -60,8 +60,8 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cart', JSON.stringify(state));
   }, [state]);
 
-  const addToCart = (product, quantity = 1) => {
-  dispatch({ type: 'ADD_ITEM', payload: { product, quantity } });
+  const addToCart = (product, quantity = 1, preorderDate = null) => {
+  dispatch({ type: 'ADD_ITEM', payload: { product, quantity, preorderDate } });
 };
 
   const removeFromCart = (productId) => {
