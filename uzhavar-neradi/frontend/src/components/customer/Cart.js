@@ -106,10 +106,10 @@ const Cart = () => {
           <p className="text-error">{t('stock_issue_warning')}</p>
         )}
         <Button
-          variant="primary"
-          onClick={() => navigate('/customer/checkout')}
-          disabled={hasStockIssue}
-        >
+  variant="primary"
+  onClick={() => navigate(getCheckoutPath())}
+  disabled={hasStockIssue}
+>
           {hasStockIssue ? t('stock_issues') : t('proceed_to_checkout')}
         </Button>
       </div>
