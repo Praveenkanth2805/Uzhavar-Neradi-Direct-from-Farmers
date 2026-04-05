@@ -9,6 +9,7 @@ import CustomerOrders from './customer/CustomerOrders';
 import DeliveryHome from './delivery/DeliveryHome';
 import Cart from './customer/Cart';
 import Checkout from './customer/Checkout';
+import DeliveryPurchases from './delivery/DeliveryPurchases';
 
 const DeliveryDashboard = () => {
   const { user } = useAuth();
@@ -49,7 +50,7 @@ const DeliveryDashboard = () => {
         <Route index element={<DeliveryHome />} />
         <Route path="orders" element={<DeliveryOrders />} />
         <Route path="browse" element={<CustomerBrowseProducts />} />
-        <Route path="purchases" element={<CustomerOrders />} />
+        <Route path="purchases" element={<DeliveryPurchases />} />
         <Route path="profile" element={<DeliveryProfile />} />
         <Route path="cart" element={<Cart />} />
         <Route path="checkout" element={<Checkout />} />

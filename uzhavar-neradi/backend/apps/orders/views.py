@@ -164,7 +164,7 @@ class CustomerOrderListView(generics.ListAPIView):
     serializer_class = OrderSerializer
 
     def get_queryset(self):
-        if self.request.user.role != 'customer':
+        if self.request.user.role not in ['customer', 'delivery']:
             return Order.objects.none()
         qs = Order.objects.filter(customer=self.request.user).order_by('-order_date')
         limit = self.request.query_params.get('limit')
