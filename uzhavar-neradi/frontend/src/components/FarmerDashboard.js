@@ -11,7 +11,8 @@ import CustomerBrowseProducts from './customer/CustomerBrowseProducts';
 import CustomerOrders from './customer/CustomerOrders';
 import FarmerEditProduct from './farmer/FarmerEditProduct';
 import Cart from './customer/Cart';               // new
-import Checkout from './customer/Checkout';     // new
+import Checkout from './customer/Checkout';  
+import FarmerPurchases from './farmer/FarmerPurchases';   // new
 
 const FarmerDashboard = () => {
   const { user } = useAuth();
@@ -60,7 +61,7 @@ const FarmerDashboard = () => {
         <Route path="add-product" element={<FarmerAddProduct />} />
         <Route path="orders" element={<FarmerOrders />} />
         <Route path="browse" element={<CustomerBrowseProducts />} />
-        <Route path="purchases" element={<CustomerOrders />} />
+        <Route path="purchases" element={<FarmerPurchases />} />
         <Route path="profile" element={<FarmerProfile />} />
         <Route path="edit-product/:id" element={<FarmerEditProduct />} />
         <Route path="cart" element={<Cart />} />
