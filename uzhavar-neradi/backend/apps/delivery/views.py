@@ -324,3 +324,24 @@ class DeliveryPartnerEarningsView(APIView):
         ).aggregate(total=Sum('delivery_fee'))['total'] or 0
 
         return Response({'total_earnings': total_earnings})
+
+#delevery is available 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
+class UpdateAvailabilityView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        user = request.user
+        if user.role != 'delivery':
+            return Response({'error': 'Only delivery partners can update availability'}, status=403)
+        
+        is_available = request.data.get('is_available')
+        if is_available is None:
+            return Response({'error': 'is_available field is required'}, status=400)
+        
+        user.is_available = is_available
+        user.save()
+        return Response({'status': 'updated', 'is_available': user.is_available})

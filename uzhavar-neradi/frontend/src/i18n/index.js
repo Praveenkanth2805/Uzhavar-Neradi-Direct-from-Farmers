@@ -383,6 +383,16 @@ const resources = {
   "vehicle_photo": "Vehicle Photo",
   "license_photo": "License Photo",
   "pending_approval_message":"wait until admin approve",
+  "availability_status": "Availability Status",
+  "available": "Available",
+  "unavailable": "Unavailable",
+  "available_now": "You are now available for deliveries",
+  "unavailable_now": "You are now unavailable for deliveries",
+  "availability_update_failed": "Failed to update availability",
+  "set_available": "Set Available",
+  "set_unavailable": "Set Unavailable",
+  "availability_help": "When unavailable, you will not receive new delivery assignments",
+
         }
     },
     ta: {
@@ -756,7 +766,18 @@ const resources = {
   "land_photo": "நில புகைப்படம்",
   "vehicle_photo": "வாகன புகைப்படம்",
   "license_photo": "உரிம புகைப்படம்",
-  "pending_approval_message":"",
+  "pending_approval_message":"wait until admin approve",
+  "availability_status": "Availability Status",
+  "available": "Available",
+  "unavailable": "Unavailable",
+  "available_now": "You are now available for deliveries",
+  "unavailable_now": "You are now unavailable for deliveries",
+  "availability_update_failed": "Failed to update availability",
+  "set_available": "Set Available",
+  "set_unavailable": "Set Unavailable",
+  "availability_help": "When unavailable, you will not receive new delivery assignments",
+
+
         }
     }
 };

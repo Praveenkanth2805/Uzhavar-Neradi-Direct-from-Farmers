@@ -29,6 +29,7 @@ class User(AbstractUser):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     is_rejected = models.BooleanField(default=False)
     rejection_reason = models.TextField(blank=True, null=True)
+    is_available = models.BooleanField(default=True, help_text="Delivery partner availability status")
 
     def save(self, *args, **kwargs):
         # If address changed and is not empty, geocode it

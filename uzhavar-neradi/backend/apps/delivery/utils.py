@@ -17,7 +17,7 @@ def find_nearest_delivery_partner(customer_lat, customer_lng):
     """
     print(f"Finding nearest partner for lat={customer_lat}, lng={customer_lng}")
     from apps.users.models import User
-    partners = User.objects.filter(role='delivery', is_approved=True, latitude__isnull=False, longitude__isnull=False)
+    partners = User.objects.filter(role='delivery', is_approved=True,is_available=True , latitude__isnull=False, longitude__isnull=False)
     print(f"Found {partners.count()} delivery partners with coordinates")
     if not partners:
         return None
@@ -26,7 +26,9 @@ def find_nearest_delivery_partner(customer_lat, customer_lng):
     min_dist = float('inf')
     for p in partners:
         dist = haversine_distance(customer_lat, customer_lng, p.latitude, p.longitude)
+        print(f"Partner {p.username}: distance = {dist} km")
         if dist < min_dist:
             min_dist = dist
             best = p
+    print(f"Nearest partner: {best.username} with distance {min_dist} km")
     return best

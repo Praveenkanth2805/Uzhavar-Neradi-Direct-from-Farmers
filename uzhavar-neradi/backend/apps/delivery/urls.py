@@ -5,7 +5,7 @@ DeliveryStatsView,NearbyDeliveryPartnersView,
 UnassignedOrdersView,CreateDeliveryAssignmentView,
 AllDeliveryPartnersView,NearestDeliveryPartnerView,
 CalculateDistanceView,DeliveryPartnerStatsView,
-DeliveryPartnerEarningsView)
+DeliveryPartnerEarningsView,UpdateAvailabilityView)
 
 urlpatterns = [
     path('admin/deliveries/', AdminDeliveryList.as_view(), name='admin-delivery-list'),
@@ -21,4 +21,5 @@ urlpatterns = [
     path('calculate-distance/', CalculateDistanceView.as_view(), name='calculate-distance'),
     path('stats/', DeliveryPartnerStatsView.as_view(), name='delivery-stats'),
     path('earnings/', DeliveryPartnerEarningsView.as_view(), name='delivery-earnings'),
+    path('update-availability/', UpdateAvailabilityView.as_view(), name='update-availability'),
 ]

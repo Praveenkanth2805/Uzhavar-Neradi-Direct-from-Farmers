@@ -2,24 +2,29 @@ import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-toastify';
 import Button from '../Button/Button';
 
 const DeliveryHome = () => {
   const [stats, setStats] = useState(null);
   const [earnings, setEarnings] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [toggling, setToggling] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, earningsRes] = await Promise.all([
+        const [statsRes, earningsRes, profileRes] = await Promise.all([
           api.get('/delivery/stats/'),
           api.get('/delivery/earnings/'),
+          api.get('/users/profile/'),   // fetch current availability
         ]);
         setStats(statsRes.data);
         setEarnings(earningsRes.data.total_earnings);
+        setIsAvailable(profileRes.data.is_available ?? true);
       } catch (err) {
         console.error(err);
       } finally {
@@ -29,13 +34,49 @@ const DeliveryHome = () => {
     fetchData();
   }, []);
 
+  const handleToggleAvailability = async () => {
+    setToggling(true);
+    try {
+      const newStatus = !isAvailable;
+      await api.patch('/delivery/update-availability/', { is_available: newStatus });
+      setIsAvailable(newStatus);
+      toast.success(newStatus ? t('available_now') : t('unavailable_now'));
+    } catch (err) {
+      toast.error(t('availability_update_failed'));
+      console.error(err);
+    } finally {
+      setToggling(false);
+    }
+  };
+
   if (loading) return <div className="container mt-md text-center">{t('loading')}</div>;
 
   return (
     <div className="container mt-md">
       <h2>{t('delivery_overview')}</h2>
+
+      {/* Availability Toggle Section */}
+      <div className="card mb-lg" style={{ padding: 'var(--spacing-md)', backgroundColor: 'var(--color-bg-secondary)' }}>
+        <div className="flex justify-between items-center wrap">
+          <div>
+            <strong>{t('availability_status')}:</strong>{' '}
+            <span style={{ color: isAvailable ? 'var(--color-success)' : 'var(--color-error)' }}>
+              {isAvailable ? t('available') : t('unavailable')}
+            </span>
+            <p className="text-sm text-muted mt-xs">{t('availability_help')}</p>
+          </div>
+          <Button
+            variant={isAvailable ? 'secondary' : 'primary'}
+            onClick={handleToggleAvailability}
+            disabled={toggling}
+          >
+            {toggling ? t('updating') : (isAvailable ? t('set_unavailable') : t('set_available'))}
+          </Button>
+        </div>
+      </div>
+
+      {/* Metric Cards */}
       <div className="flex gap-md wrap" style={{ marginBottom: 'var(--spacing-lg)' }}>
-        {/* existing metric cards */}
         <div className="metric-card">
           <h3>{t('total_assigned')}</h3>
           <p>{stats.total_assigned}</p>
@@ -73,17 +114,17 @@ const DeliveryHome = () => {
                   <th>{t('address')}</th>
                   <th>{t('status')}</th>
                   <th>{t('date')}</th>
-                  </tr>
-                </thead>
+                </tr>
+              </thead>
               <tbody>
                 {stats.recent_deliveries.map(o => (
                   <tr key={o.id}>
-                    <td>{o.id} </td>
-                    <td>{o.customer} </td>
-                    <td> {o.address} </td>
-                    <td> {o.status} </td>
-                     <td>{new Date(o.date).toLocaleDateString()} </td>
-                   </tr>
+                    <td>{o.id}</td>
+                    <td>{o.customer}</td>
+                    <td>{o.address}</td>
+                    <td>{o.status}</td>
+                    <td>{new Date(o.date).toLocaleDateString()}</td>
+                  </tr>
                 ))}
               </tbody>
             </table>
