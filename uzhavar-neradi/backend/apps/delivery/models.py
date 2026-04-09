@@ -9,3 +9,5 @@ class DeliveryAssignment(models.Model):
     picked_up_at = models.DateTimeField(null=True, blank=True)
     delivered_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
+    rejected_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.CharField(max_length=100, blank=True, null=True)

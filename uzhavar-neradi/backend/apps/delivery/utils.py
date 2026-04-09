@@ -32,3 +32,25 @@ def find_nearest_delivery_partner(customer_lat, customer_lng):
             best = p
     print(f"Nearest partner: {best.username} with distance {min_dist} km")
     return best
+
+def find_nearest_delivery_partner_excluding(lat, lng, exclude_user):
+    if lat is None or lng is None:
+        return None
+    from apps.users.models import User
+    partners = User.objects.filter(
+        role='delivery',
+        is_approved=True,
+        is_available=True,
+        latitude__isnull=False,
+        longitude__isnull=False
+    ).exclude(id=exclude_user.id)
+    best = None
+    min_dist = float('inf')
+    for p in partners:
+        if p.latitude is None or p.longitude is None:
+            continue
+        dist = haversine_distance(lat, lng, p.latitude, p.longitude)
+        if dist < min_dist:
+            min_dist = dist
+            best = p
+    return best

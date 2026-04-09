@@ -64,10 +64,12 @@ from django.utils import timezone
 from .models import DeliveryAssignment
 from apps.orders.models import Order
 from apps.orders.serializers import OrderSerializer
+from apps.orders.serializers import DeliveryOrderSerializer
 
 class DeliveryOrderListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OrderSerializer
+    #serializer_class = OrderSerializer
+    serializer_class = DeliveryOrderSerializer 
 
     def get_queryset(self):
         if self.request.user.role != 'delivery':
@@ -161,6 +163,7 @@ class NearbyDeliveryPartnersView(generics.ListAPIView):
 from rest_framework import generics, permissions
 from apps.orders.models import Order
 from apps.orders.serializers import OrderSerializer
+
 
 class UnassignedOrdersView(generics.ListAPIView):
     permission_classes = [permissions.IsAdminUser]
@@ -345,3 +348,75 @@ class UpdateAvailabilityView(APIView):
         user.is_available = is_available
         user.save()
         return Response({'status': 'updated', 'is_available': user.is_available})
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
+from .models import DeliveryAssignment
+from apps.orders.models import Order
+from .utils import find_nearest_delivery_partner_excluding
+from django.core.mail import send_mail
+from django.conf import settings
+
+class RejectAssignmentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, assignment_id):
+        user = request.user
+        if user.role != 'delivery':
+            return Response({'error': 'Only delivery partners can reject'}, status=403)
+
+        try:
+            assignment = DeliveryAssignment.objects.get(id=assignment_id, delivery_partner=user)
+        except DeliveryAssignment.DoesNotExist:
+            return Response({'error': 'Assignment not found'}, status=404)
+
+        order = assignment.order  # <-- DEFINE ORDER HERE FIRST
+        print(f"DEBUG: Order {order.id} status = '{order.status}'")   # <-- add this
+
+        if order.status != 'shipped':
+            return Response({'error': 'Order cannot be rejected at this stage'}, status=400)
+
+        reason = request.data.get('reason')
+        if not reason:
+            return Response({'error': 'Rejection reason required'}, status=400)
+
+        # Mark current assignment as rejected
+        assignment.rejected_at = timezone.now()
+        assignment.rejection_reason = reason
+        assignment.save()
+
+        # Check customer coordinates
+        if order.customer_lat is None or order.customer_lng is None:
+            return Response({'error': 'Customer coordinates missing. Cannot reassign.'}, status=400)
+
+        # Find next nearest available partner (excluding current partner)
+        new_partner = find_nearest_delivery_partner_excluding(
+            order.customer_lat, order.customer_lng, exclude_user=user
+        )
+
+        if new_partner:
+            assignment.delivery_partner = new_partner
+            assignment.rejected_at = None   # optional: clear if you want
+            assignment.rejection_reason = None
+            assignment.save()
+            send_mail(
+                subject=f"New Delivery Assignment – Order #{order.id}",
+                message=f"You have been assigned order #{order.id} due to rejection by another partner.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[new_partner.email],
+                fail_silently=True,
+            )
+            return Response({
+                'status': 'reassigned',
+                'new_partner_id': new_partner.id,
+                'new_partner_name': new_partner.username
+            })
+        else:
+            order.status = 'pending'
+            order.save()
+            return Response({
+                'status': 'no_partner_available',
+                'message': 'No other delivery partner available. Order marked for manual assignment.'
+            }, status=200)

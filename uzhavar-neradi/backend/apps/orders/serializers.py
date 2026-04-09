@@ -23,5 +23,14 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('order_date',)
 
+class DeliveryOrderSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.username', read_only=True)
+    assignment_id = serializers.IntegerField(source='deliveryassignment.id', read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ['id', 'customer_name', 'delivery_address', 'status', 'total_amount', 'order_date', 'assignment_id']
+
+        
 class MarkOrderPaidSerializer(serializers.Serializer):
     transaction_id = serializers.CharField(required=False, allow_blank=True)
